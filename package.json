@@ -9,7 +9,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test"
+    "check": "npm run typecheck && npm run test",
+    "smoke:staging": "node scripts/staging-smoke.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

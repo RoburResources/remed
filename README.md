@@ -32,8 +32,10 @@ This package replaces the audited Manus/Vite/Express prototype with a Vercel + S
 9. Configure Make.com email callback webhook if email is enabled:
    - `POST https://<deployment>/api/webhooks/make/email`
    - Header: `x-robur-webhook-secret: $MAKE_WEBHOOK_SECRET`
-10. Run `npm run check`.
-11. Manually invoke `/api/admin/status` with `Authorization: Bearer $DASHBOARD_API_TOKEN`.
+10. Run `npm ci`.
+11. Run `npm run typecheck`, `npm run test`, and `npm run build`.
+12. Manually invoke `/api/admin/status` with `Authorization: Bearer $DASHBOARD_API_TOKEN`.
+13. For staging only, run `npm run smoke:staging` with `STAGING_BASE_URL`, `CRON_SECRET`, `DASHBOARD_API_TOKEN`, and `STAGING_CONFIRM_NON_PRODUCTION=true`.
 
 ## Safety default
 
@@ -46,3 +48,16 @@ This build is safe-by-default. It does not contact external people unless:
 - the provider call/message succeeds.
 
 Owner briefings to `OWNER_PHONE` are separate from marketing/outreach and are still counted against the call limit.
+
+## Local validation
+
+```bash
+npm ci
+npm run typecheck
+npm run test
+npm run build
+```
+
+PowerShell users may need to run `npm.cmd` instead of `npm` if local execution policy blocks npm scripts.
+
+See `docs/PRODUCTION_READINESS.md` for staging smoke-test instructions, safety proof, known blockers, and the current go/no-go recommendation.
