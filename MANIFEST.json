@@ -1,0 +1,269 @@
+{
+  "files": [
+    {
+      "path": ".env.example",
+      "bytes": 986,
+      "sha256": "57a49613b5b22711a6be1f33b7e160d4ab1c4fbb76538d79b9055e3c0d5fd611"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 86,
+      "sha256": "4fd20ba3a9629976d22fafddc05076f1d59a98a80b85c8bcca823c75afe64cf4"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 1617,
+      "sha256": "1df7e905648e2a0f5d7d9fb1258852604ac70716cab9e4919da828980c77bd99"
+    },
+    {
+      "path": "CODEX_TASK.md",
+      "bytes": 2196,
+      "sha256": "153e9f05c8151056ef68ae968d2b66b788b4fe2e61203def110e444c15ad1467"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2483,
+      "sha256": "8480abda50fc6d5ae5904f73f97d790170a56ca5f5c917b103a8ed24b831e77d"
+    },
+    {
+      "path": "next-env.d.ts",
+      "bytes": 81,
+      "sha256": "879741880b6ab48da99dcc06dcc674d381c9826137b0496bf7bb368f302de9fc"
+    },
+    {
+      "path": "next.config.mjs",
+      "bytes": 143,
+      "sha256": "d8eb665eecfa212b693cdc40ecd787459e1d1a448d4143596f742bf2b979d7cb"
+    },
+    {
+      "path": "package.json",
+      "bytes": 768,
+      "sha256": "471538e06a4cc26844b5b6ad2f3ff97a6ba9049b6b3fff3940471b5c5b4d4c0d"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 574,
+      "sha256": "1b25f06383f3e196b4e6bee8553eacbfedf35d4ad9ca949766951d48dd3e6dac"
+    },
+    {
+      "path": "tsconfig.tsbuildinfo",
+      "bytes": 19250,
+      "sha256": "28cb9922ce309467f3bbb4c60f93c3f4bcb5eea062e5056e6ce4d4d8b7c24881"
+    },
+    {
+      "path": "vercel.json",
+      "bytes": 532,
+      "sha256": "a21597bdd23730bb027df98e670471d1890f4286de3d52313915017838e8c5ae"
+    },
+    {
+      "path": "docs/AI_CLARITY_METHOD.md",
+      "bytes": 1471,
+      "sha256": "ac016f93eaaf394a15963fd54671fa7563a6f35c85550582fa667c106beb1bad"
+    },
+    {
+      "path": "docs/OPENAI_PLATFORM_NOTES.md",
+      "bytes": 805,
+      "sha256": "6f976e4c9a7a3029130a94c7f0eba62164bad5347fe4e40e6043153dbfdef207"
+    },
+    {
+      "path": "docs/REMEDIATION_MATRIX.md",
+      "bytes": 1813,
+      "sha256": "8c9e80ef21f666c5bde536ab9ca13d380e08582c5a0f643170f9e07e18e94eab"
+    },
+    {
+      "path": "docs/SECURITY_ROTATION_CHECKLIST.md",
+      "bytes": 938,
+      "sha256": "c9e564fea71baa1a0e87d0ca8a09d4bf2918e62d1facf0b9fcec6409e8f2b975"
+    },
+    {
+      "path": "supabase/seed.sql",
+      "bytes": 2010,
+      "sha256": "254d5fd95b19d8111a9a94ccbeef5ccece9077599457a04b2343f6f1f159f778"
+    },
+    {
+      "path": "supabase/migrations/0001_robur_autonomous_worker.sql",
+      "bytes": 13483,
+      "sha256": "bff644d12e60d88384a3158693703de38b80f9553b5fc16bcd62741ec574e619"
+    },
+    {
+      "path": "src/lib/approval.ts",
+      "bytes": 5287,
+      "sha256": "90a61d080e820e203c962b713198aa5156ffc73ef5a696b4fadd57d337ba37d6"
+    },
+    {
+      "path": "src/lib/compliance.ts",
+      "bytes": 5020,
+      "sha256": "5440d58f1779a19a66509312040c0e97e4ffc44d0588b5791c43aa985cad6666"
+    },
+    {
+      "path": "src/lib/crypto.ts",
+      "bytes": 1232,
+      "sha256": "e0bb9f990a6f2016cc3141d688a74e2791e64d543b44b062f6a5d92a4ff2de2f"
+    },
+    {
+      "path": "src/lib/db.ts",
+      "bytes": 17995,
+      "sha256": "5081cdc198caa47b7e3db6319e97d35c644578547ad11fa76c7b02edcd88aa2e"
+    },
+    {
+      "path": "src/lib/env.ts",
+      "bytes": 1990,
+      "sha256": "52b671f23f15527a5461b2cd9b9b54a3ed5f56e0102416c4e773ed9ff68cbfcf"
+    },
+    {
+      "path": "src/lib/http.ts",
+      "bytes": 1252,
+      "sha256": "ca13911801eeb9f478355f0af2cfaa983ed137776b08b01b469fe5663fdd5d68"
+    },
+    {
+      "path": "src/lib/openai.ts",
+      "bytes": 3013,
+      "sha256": "d87d819e0800fb3447c6ee26a034408b923018465b8f303da9232f7a132b2e90"
+    },
+    {
+      "path": "src/lib/supabase.ts",
+      "bytes": 546,
+      "sha256": "04019243be9e1e2d7dad06cb9506ba36e081e295055b04e2abb532392ed0fbfe"
+    },
+    {
+      "path": "src/lib/types.ts",
+      "bytes": 2664,
+      "sha256": "ad15c6e19b928cb6904b88b469fd4df92fb58ce7f09e31073b401ca5aa3b6fe1"
+    },
+    {
+      "path": "src/lib/integrations/email.ts",
+      "bytes": 2746,
+      "sha256": "a9f604492bc912cc4b0d604f79b9050328b63475c834c9f0cffa497d5db1c036"
+    },
+    {
+      "path": "src/lib/integrations/retell.ts",
+      "bytes": 2694,
+      "sha256": "328c80dc38e4e13cf7de225694a7e9ad55264b4c5017f2f95e3d6ced1d7fb6c6"
+    },
+    {
+      "path": "src/lib/integrations/twilio.ts",
+      "bytes": 3150,
+      "sha256": "1837c369963d23e159386e49988c9057e58370459caa4688fd3e1f08db0d7f08"
+    },
+    {
+      "path": "src/lib/scanners/austender.ts",
+      "bytes": 3372,
+      "sha256": "45ca05089049175ca0ef4642e24ed1ac588a3a1e5f020792ba3169520451d292"
+    },
+    {
+      "path": "src/lib/workers/briefings.ts",
+      "bytes": 3202,
+      "sha256": "84da26c2a2f48c75991444a20560252aff8c16bc202ac53d53ae528e509905e9"
+    },
+    {
+      "path": "src/lib/workers/evaluator.ts",
+      "bytes": 3226,
+      "sha256": "a32405da60c2b22621ae62d1d0acfde95a15aabed9c3ef3e67404f5697f113bc"
+    },
+    {
+      "path": "src/lib/workers/self-improver.ts",
+      "bytes": 2524,
+      "sha256": "e9042c915e1e77292518540b5fe037a2695f20140c9312c775843bfc966c1b69"
+    },
+    {
+      "path": "src/lib/workers/task-executor.ts",
+      "bytes": 8740,
+      "sha256": "2b752822ea090419141077433f015d3c730f7fe2cfa4f2927bc7399e68849723"
+    },
+    {
+      "path": "src/lib/workers/task-generator.ts",
+      "bytes": 4970,
+      "sha256": "21951a71dae697fe76d20543c90a2630a13b7ccac45b9a0e51cbe6d9d4c29ae2"
+    },
+    {
+      "path": "app/globals.css",
+      "bytes": 295,
+      "sha256": "461970ccdb5ec1dcdace0041b7a4cbfc9b0eea1ad4fc85007c648134dacadabb"
+    },
+    {
+      "path": "app/layout.tsx",
+      "bytes": 383,
+      "sha256": "0e3f2386e1d1c08942b3a860f39f18473dbd0664253c831de08229b6aa0a7894"
+    },
+    {
+      "path": "app/page.tsx",
+      "bytes": 401,
+      "sha256": "f95dab34e01bd11c685ef54cdd6e4bcc0fc8418bd9cfe61937ec496041868f1f"
+    },
+    {
+      "path": "app/api/cron/task-generator/route.ts",
+      "bytes": 379,
+      "sha256": "36916e55c091b411c81fdd52999df4013b23290403fd989de9433b14b7275fef"
+    },
+    {
+      "path": "app/api/cron/task-executor/route.ts",
+      "bytes": 376,
+      "sha256": "347b5aad5685a1124e9794515a262454dd7cd6a77111251ffcf12bb48c4eb1b2"
+    },
+    {
+      "path": "app/api/cron/evaluator/route.ts",
+      "bytes": 366,
+      "sha256": "c0cd43b2e436c0bf47b61b954673ca71d433c05448e3bfb1a9a5da5e42478459"
+    },
+    {
+      "path": "app/api/cron/self-improver/route.ts",
+      "bytes": 376,
+      "sha256": "a22c9d8d9e2893b2d34c90aa08c06d79cc5a857d05ee6904948f27ab5da02c07"
+    },
+    {
+      "path": "app/api/cron/morning-briefing/route.ts",
+      "bytes": 378,
+      "sha256": "84577286bc926920d9372b1e92ce032441e0fcb8ddbec5594e789b1b2e80d595"
+    },
+    {
+      "path": "app/api/cron/evening-briefing/route.ts",
+      "bytes": 378,
+      "sha256": "d1a825126093a74519ce176450b7df85306e6632d7e9c7e870a8993040dad1f5"
+    },
+    {
+      "path": "app/api/webhooks/twilio/sms/route.ts",
+      "bytes": 3767,
+      "sha256": "2edf20dbcc97e857b07b682a3ed5dd4210e4a5f3ea6a18f6a3afe5f881dc2270"
+    },
+    {
+      "path": "app/api/webhooks/retell/route.ts",
+      "bytes": 3285,
+      "sha256": "89a57df1cf3aecc49eabf0dd410eaf18a23cd871266d2b74309fcf42d6782d26"
+    },
+    {
+      "path": "app/api/webhooks/make/email/route.ts",
+      "bytes": 1935,
+      "sha256": "ed5ee301e786e8aecb5ab5a258e044757039f7b008acf8fdbcf9bcec3b9064d9"
+    },
+    {
+      "path": "app/api/admin/status/route.ts",
+      "bytes": 1054,
+      "sha256": "0888f0318cd90a31a775efd9d46d2e7318f4389aa3ce8c142a4fec0484ca8e59"
+    },
+    {
+      "path": "app/api/admin/tasks/route.ts",
+      "bytes": 566,
+      "sha256": "df5b7abf6834ae20309076c2651ef0844885598f2b85efd45c0df89bc2426934"
+    },
+    {
+      "path": "tests/approval.test.ts",
+      "bytes": 789,
+      "sha256": "cecd5468f392c898932b05b43541c8954c19554924815d608f3b178a2df36f7f"
+    },
+    {
+      "path": "tests/austender.test.ts",
+      "bytes": 615,
+      "sha256": "0a3aa18debd2757dbdd7587df9cb0ca9aba4da3440caedd35918c17b549f2e5f"
+    },
+    {
+      "path": "tests/compliance.test.ts",
+      "bytes": 830,
+      "sha256": "768a968fdd719e8419b6a601473924fffe761686d458ba39f4115835cc895c65"
+    },
+    {
+      "path": "tests/signatures.test.ts",
+      "bytes": 1635,
+      "sha256": "460c062be445710a2f8427865df255408154df6d06dde92919fc15a19a61b0c9"
+    }
+  ]
+}
