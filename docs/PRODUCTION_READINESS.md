@@ -78,6 +78,12 @@ DASHBOARD_API_TOKEN=...
 STAGING_CONFIRM_NON_PRODUCTION=true
 ```
 
+If Vercel Preview SSO/deployment protection is enabled, create a temporary automation protection bypass for the staging project, set it only for the smoke run, and disable it immediately afterward:
+
+```bash
+VERCEL_PROTECTION_BYPASS=...
+```
+
 Run:
 
 ```bash

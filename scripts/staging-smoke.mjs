@@ -15,12 +15,14 @@ if (baseUrl.hostname === "robur.com.au" || baseUrl.hostname.startsWith("www.")) 
   throw new Error("Refusing to run smoke test against a production-looking hostname.");
 }
 
-const cronHeaders = {
+const vercelProtectionBypass = process.env.VERCEL_PROTECTION_BYPASS;
+
+const cronHeaders = withOptionalVercelBypass({
   Authorization: `Bearer ${process.env.CRON_SECRET}`
-};
-const dashboardHeaders = {
+});
+const dashboardHeaders = withOptionalVercelBypass({
   Authorization: `Bearer ${process.env.DASHBOARD_API_TOKEN}`
-};
+});
 
 const before = await getStatus();
 assertSafeDefaults(before, "before cron calls");
@@ -103,5 +105,16 @@ function summarizeMetrics(metrics = {}) {
     emails_sent: Number(metrics.emails_sent ?? 0),
     sms_sent: Number(metrics.sms_sent ?? 0),
     api_spend_cents: Number(metrics.api_spend_cents ?? 0)
+  };
+}
+
+function withOptionalVercelBypass(headers) {
+  if (!vercelProtectionBypass) {
+    return headers;
+  }
+
+  return {
+    ...headers,
+    "x-vercel-protection-bypass": vercelProtectionBypass
   };
 }
