@@ -22,6 +22,7 @@ const envSchema = z.object({
 
   RETELL_API_KEY: z.string().optional(),
   RETELL_AGENT_ID: z.string().optional(),
+  RETELL_EXECUTIVE_ASSISTANT_AGENT_ID: z.string().optional(),
   RETELL_FROM_NUMBER: z.string().regex(/^\+\d{8,15}$/).optional(),
 
   MAKE_EMAIL_WEBHOOK_URL: z.string().url().optional(),
@@ -58,5 +59,13 @@ export function hasTwilioCredentials(env = getEnv()): boolean {
 }
 
 export function hasRetellCredentials(env = getEnv()): boolean {
-  return Boolean(env.RETELL_API_KEY && env.RETELL_AGENT_ID && (env.RETELL_FROM_NUMBER || env.TWILIO_PHONE_NUMBER));
+  return Boolean(
+    env.RETELL_API_KEY &&
+      (env.RETELL_AGENT_ID || env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID) &&
+      (env.RETELL_FROM_NUMBER || env.TWILIO_PHONE_NUMBER)
+  );
+}
+
+export function getExecutiveAssistantAgentId(env = getEnv()): string | undefined {
+  return env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID ?? env.RETELL_AGENT_ID;
 }

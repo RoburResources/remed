@@ -18,6 +18,8 @@ import { sendEmailViaMake } from "@/src/lib/integrations/email";
 import { createRetellPhoneCall } from "@/src/lib/integrations/retell";
 import { sendSms } from "@/src/lib/integrations/twilio";
 import { createStructuredOutput } from "@/src/lib/openai";
+import { getEnv, getExecutiveAssistantAgentId } from "@/src/lib/env";
+import { executiveAssistantDynamicVariables } from "@/src/lib/retell-personas";
 import { scanAusTenderOpportunities } from "@/src/lib/scanners/austender";
 import { Task, WorkerResult } from "@/src/lib/types";
 import { fetchWithUrlSafety } from "@/src/lib/url-safety";
@@ -175,13 +177,18 @@ async function executeBriefingTask(task: Task): Promise<void> {
   await assertDailyLimit("calls_made", "max_calls_per_day");
 
   const toNumber = getRequiredString(task, "to_number");
+  const env = getEnv();
+  await assertExternalContactAllowed(task, "call");
+
   const call = await createRetellPhoneCall({
     toNumber,
+    agentId: getExecutiveAssistantAgentId(env),
     metadata: {
       task_id: task.id,
       briefing_type: task.action_payload.briefing_type ?? "manual"
     },
     dynamicVariables: {
+      ...executiveAssistantDynamicVariables,
       briefing_text: String(task.action_payload.briefing_text ?? task.description)
     }
   });

@@ -34,7 +34,6 @@ export async function taskRequiresApproval(task: Task): Promise<boolean> {
   const env = getEnv();
   if (
     (task.external_contact || isExternalContactActionType(task.action_type)) &&
-    task.action_type !== "briefing" &&
     !isOwnerPhoneTaskTarget(task, env.OWNER_PHONE)
   ) {
     return true;

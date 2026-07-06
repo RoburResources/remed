@@ -239,7 +239,7 @@ export function hasTaskSpecificOwnerApproval(task: Task): boolean {
 }
 
 export function isExternalContactActionType(actionType: string): boolean {
-  return actionType === "outbound_call" || actionType === "send_sms" || actionType === "send_email";
+  return actionType === "outbound_call" || actionType === "send_sms" || actionType === "send_email" || actionType === "briefing";
 }
 
 export function isOwnerPhoneTaskTarget(task: Task, ownerPhone: string): boolean {

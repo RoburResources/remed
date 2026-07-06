@@ -1,5 +1,5 @@
 import { hmacHex, safeEqual, sha256Hex } from "@/src/lib/crypto";
-import { getEnv, hasRetellCredentials } from "@/src/lib/env";
+import { getEnv } from "@/src/lib/env";
 
 export interface RetellCreatePhoneCallInput {
   toNumber: string;
@@ -20,8 +20,9 @@ export interface RetellCreatePhoneCallResponse {
 
 export async function createRetellPhoneCall(input: RetellCreatePhoneCallInput): Promise<RetellCreatePhoneCallResponse> {
   const env = getEnv();
+  const agentId = input.agentId ?? env.RETELL_AGENT_ID;
 
-  if (!hasRetellCredentials(env)) {
+  if (!env.RETELL_API_KEY || !agentId) {
     throw new Error("Retell credentials are not configured");
   }
 
@@ -33,7 +34,7 @@ export async function createRetellPhoneCall(input: RetellCreatePhoneCallInput): 
   const body: Record<string, unknown> = {
     from_number: fromNumber,
     to_number: input.toNumber,
-    override_agent_id: input.agentId ?? env.RETELL_AGENT_ID,
+    override_agent_id: agentId,
     metadata: input.metadata ?? {}
   };
 

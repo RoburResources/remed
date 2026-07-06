@@ -8,6 +8,7 @@ This package replaces the audited Manus/Vite/Express prototype with a Vercel + S
 - Vercel cron endpoints are `GET` route handlers protected by `CRON_SECRET`.
 - Dashboard/admin APIs require `DASHBOARD_API_TOKEN`.
 - Retell outbound calls use `POST /v2/create-phone-call` with `from_number`, `to_number`, and documented one-time `override_agent_id`.
+- Owner/executive briefing calls can use `RETELL_EXECUTIVE_ASSISTANT_AGENT_ID`; default Retell agent routing is left unchanged.
 - Retell webhooks verify `X-Retell-Signature` against the raw body before updating call/task state.
 - Twilio inbound SMS verifies `X-Twilio-Signature`, uses canonical deployment URL, and restricts control commands to `OWNER_PHONE`.
 - Approval commands are task-specific and nonce-specific: `APPROVE #123 184921`.

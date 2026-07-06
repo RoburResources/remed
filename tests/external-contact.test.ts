@@ -27,6 +27,21 @@ describe("external contact compliance gate", () => {
     );
   });
 
+  it("allows owner phone calls even when outside contact is disabled", async () => {
+    getConfig.mockResolvedValue(false);
+    const { assertExternalContactAllowed } = await import("@/src/lib/compliance");
+
+    await expect(
+      assertExternalContactAllowed(
+        makeTask({
+          action_type: "briefing",
+          action_payload: { to_number: "+61400000000" }
+        }),
+        "call"
+      )
+    ).resolves.toBeUndefined();
+  });
+
   it("requires task-specific owner approval for non-owner external contact", async () => {
     getConfig.mockResolvedValue(true);
     const { assertExternalContactAllowed } = await import("@/src/lib/compliance");
