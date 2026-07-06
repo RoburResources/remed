@@ -52,6 +52,10 @@ This build is safe-by-default. It does not contact external people unless:
 
 Owner briefings to `OWNER_PHONE` and email to `OWNER_EMAIL` are separate from marketing/outreach and are still counted against the relevant daily limits.
 
+## Voice access and settings
+
+After unlocking `/console`, use the Voice access panel to trigger an owner briefing call through Retell. Use the Settings panel to turn voice briefings on/off and adjust daily call, SMS, email, and API-spend caps within the protected safety bounds.
+
 ## Owner approvals and change requests
 
 Every non-owner call, SMS, WhatsApp-style provider message, or email must be represented by a specific task and approved with its own one-time nonce:

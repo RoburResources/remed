@@ -582,6 +582,15 @@ h2 {
   font-weight: 700;
 }
 
+.console-success {
+  border: 1px solid rgba(24, 128, 92, 0.24);
+  border-radius: 8px;
+  background: #edf9f2;
+  padding: 12px 14px;
+  color: #126444;
+  font-weight: 800;
+}
+
 .console-back-link {
   display: inline-flex;
   margin-top: 22px;
@@ -628,6 +637,11 @@ h2 {
 .console-actions {
   display: flex;
   gap: 10px;
+}
+
+.console-actions-wrap {
+  flex-wrap: wrap;
+  margin-top: 16px;
 }
 
 .console-actions button {
@@ -695,15 +709,29 @@ h2 {
   padding: 24px;
 }
 
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.panel-heading h2 {
+  margin-bottom: 0;
+}
+
 .metric-list,
-.status-counts {
+.status-counts,
+.settings-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
 .metric-list div,
-.status-counts div {
+.status-counts div,
+.settings-list div {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fbfdfb;
@@ -711,7 +739,9 @@ h2 {
 }
 
 .metric-list span,
-.status-counts span {
+.status-counts span,
+.settings-list span,
+.settings-form span {
   display: block;
   margin-bottom: 10px;
   font-size: 0.78rem;
@@ -720,8 +750,69 @@ h2 {
 }
 
 .metric-list strong,
-.status-counts strong {
+.status-counts strong,
+.settings-list strong {
   font-size: 1.55rem;
+}
+
+.settings-form {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-form label,
+.settings-toggle {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfb;
+  padding: 14px;
+}
+
+.settings-form input[type="number"] {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 0 12px;
+}
+
+.settings-form input[type="number"]:focus {
+  border-color: rgba(37, 99, 235, 0.5);
+  outline: 3px solid rgba(37, 99, 235, 0.14);
+}
+
+.settings-toggle {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.settings-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--green);
+}
+
+.settings-toggle span {
+  margin-bottom: 0;
+}
+
+.settings-form button {
+  min-height: 44px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 8px;
+  background: #eef3ff;
+  color: #1746a2;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.settings-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .task-table,
@@ -815,7 +906,8 @@ h2 {
   }
 
   .metric-list,
-  .status-counts {
+  .status-counts,
+  .settings-list {
     grid-template-columns: 1fr;
   }
 }

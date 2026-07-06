@@ -47,6 +47,32 @@ type TasksPayload = {
   tasks: Task[];
 };
 
+type SettingsPayload = {
+  ok: boolean;
+  voice: {
+    retell_configured: boolean;
+    retell_briefings_enabled: boolean;
+    owner_phone_configured: boolean;
+    owner_email_configured: boolean;
+    owner_contact_rule: string;
+  };
+  limits: {
+    max_calls_per_day: number;
+    max_sms_per_day: number;
+    max_emails_per_day: number;
+    max_api_spend_cents_per_day: number;
+  };
+  bounds: SettingsPayload["limits"];
+};
+
+type SettingsDraft = {
+  retell_briefings_enabled: boolean;
+  max_calls_per_day: string;
+  max_sms_per_day: string;
+  max_emails_per_day: string;
+  max_api_spend_cents_per_day: string;
+};
+
 type SessionPayload = {
   ok: boolean;
   authenticated: boolean;
@@ -77,6 +103,16 @@ function metricValue(metrics: DailyMetrics | undefined, key: keyof DailyMetrics)
   return Number(metrics?.[key] ?? 0);
 }
 
+function draftFromSettings(settings: SettingsPayload): SettingsDraft {
+  return {
+    retell_briefings_enabled: settings.voice.retell_briefings_enabled,
+    max_calls_per_day: String(settings.limits.max_calls_per_day),
+    max_sms_per_day: String(settings.limits.max_sms_per_day),
+    max_emails_per_day: String(settings.limits.max_emails_per_day),
+    max_api_spend_cents_per_day: String(settings.limits.max_api_spend_cents_per_day)
+  };
+}
+
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-AU", {
     dateStyle: "medium",
@@ -87,9 +123,12 @@ function formatDate(value: string): string {
 export function ConsoleClient() {
   const [state, setState] = useState<ConsoleState>("checking");
   const [status, setStatus] = useState<StatusPayload | null>(null);
+  const [settings, setSettings] = useState<SettingsPayload | null>(null);
+  const [settingsDraft, setSettingsDraft] = useState<SettingsDraft | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
   const openTaskCount = useMemo(
@@ -99,13 +138,16 @@ export function ConsoleClient() {
 
   async function refreshConsole() {
     setError(null);
-    const [statusData, tasksData] = await Promise.all([
+    const [statusData, tasksData, settingsData] = await Promise.all([
       readJson<StatusPayload>("/api/admin/status"),
-      readJson<TasksPayload>("/api/admin/tasks?limit=25")
+      readJson<TasksPayload>("/api/admin/tasks?limit=25"),
+      readJson<SettingsPayload>("/api/admin/settings")
     ]);
 
     setStatus(statusData);
     setTasks(tasksData.tasks ?? []);
+    setSettings(settingsData);
+    setSettingsDraft(draftFromSettings(settingsData));
     setState("ready");
   }
 
@@ -149,9 +191,61 @@ export function ConsoleClient() {
     setIsBusy(true);
     await readJson<{ ok: boolean }>("/api/admin/session", { method: "DELETE" }).catch(() => undefined);
     setStatus(null);
+    setSettings(null);
+    setSettingsDraft(null);
     setTasks([]);
+    setActionMessage(null);
     setState("locked");
     setIsBusy(false);
+  }
+
+  async function handleVoiceCall(type: "morning" | "evening") {
+    setIsBusy(true);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      const result = await readJson<{ ok: boolean; message: string }>("/api/admin/voice/briefing", {
+        method: "POST",
+        body: JSON.stringify({ type, confirmOwnerCall: true })
+      });
+      setActionMessage(result.message);
+      await refreshConsole();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Voice call failed");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleSettingsSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!settingsDraft) return;
+
+    setIsBusy(true);
+    setError(null);
+    setActionMessage(null);
+
+    try {
+      const nextSettings = await readJson<SettingsPayload>("/api/admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          retell_briefings_enabled: settingsDraft.retell_briefings_enabled,
+          max_calls_per_day: Number(settingsDraft.max_calls_per_day),
+          max_sms_per_day: Number(settingsDraft.max_sms_per_day),
+          max_emails_per_day: Number(settingsDraft.max_emails_per_day),
+          max_api_spend_cents_per_day: Number(settingsDraft.max_api_spend_cents_per_day)
+        })
+      });
+      setSettings(nextSettings);
+      setSettingsDraft(draftFromSettings(nextSettings));
+      setActionMessage("Settings saved.");
+      await refreshConsole();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Settings update failed");
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   if (state === "checking") {
@@ -246,6 +340,7 @@ export function ConsoleClient() {
       </section>
 
       {error ? <p className="console-error">{error}</p> : null}
+      {actionMessage ? <p className="console-success">{actionMessage}</p> : null}
 
       <section className="console-card-grid" aria-label="System status">
         {statusCards.map((card) => (
@@ -260,6 +355,110 @@ export function ConsoleClient() {
             <p>{card.detail}</p>
           </motion.article>
         ))}
+      </section>
+
+      <section className="console-split">
+        <article className="console-panel">
+          <div className="panel-heading">
+            <h2>Voice access</h2>
+            <span className="task-status">{settings?.voice.retell_configured ? "Ready" : "Needs config"}</span>
+          </div>
+          <div className="settings-list">
+            <div>
+              <span>Retell</span>
+              <strong>{settings?.voice.retell_configured ? "Connected" : "Missing"}</strong>
+            </div>
+            <div>
+              <span>Owner phone</span>
+              <strong>{settings?.voice.owner_phone_configured ? "Set" : "Missing"}</strong>
+            </div>
+            <div>
+              <span>Owner email</span>
+              <strong>{settings?.voice.owner_email_configured ? "Set" : "Missing"}</strong>
+            </div>
+            <div>
+              <span>Briefings</span>
+              <strong>{settings?.voice.retell_briefings_enabled ? "On" : "Off"}</strong>
+            </div>
+          </div>
+          <div className="console-actions console-actions-wrap">
+            <button disabled={isBusy || !settings?.voice.retell_configured} onClick={() => handleVoiceCall("morning")} type="button">
+              Call morning brief
+            </button>
+            <button disabled={isBusy || !settings?.voice.retell_configured} onClick={() => handleVoiceCall("evening")} type="button">
+              Call evening brief
+            </button>
+          </div>
+        </article>
+
+        <article className="console-panel">
+          <div className="panel-heading">
+            <h2>Settings</h2>
+            <span className="task-status">Protected</span>
+          </div>
+          {settingsDraft ? (
+            <form className="settings-form" onSubmit={handleSettingsSubmit}>
+              <label className="settings-toggle">
+                <input
+                  checked={settingsDraft.retell_briefings_enabled}
+                  onChange={(event) =>
+                    setSettingsDraft({ ...settingsDraft, retell_briefings_enabled: event.target.checked })
+                  }
+                  type="checkbox"
+                />
+                <span>Voice briefings</span>
+                <strong>{settingsDraft.retell_briefings_enabled ? "On" : "Off"}</strong>
+              </label>
+              <label>
+                <span>Daily calls</span>
+                <input
+                  max={settings?.bounds.max_calls_per_day}
+                  min={1}
+                  onChange={(event) => setSettingsDraft({ ...settingsDraft, max_calls_per_day: event.target.value })}
+                  type="number"
+                  value={settingsDraft.max_calls_per_day}
+                />
+              </label>
+              <label>
+                <span>Daily SMS</span>
+                <input
+                  max={settings?.bounds.max_sms_per_day}
+                  min={1}
+                  onChange={(event) => setSettingsDraft({ ...settingsDraft, max_sms_per_day: event.target.value })}
+                  type="number"
+                  value={settingsDraft.max_sms_per_day}
+                />
+              </label>
+              <label>
+                <span>Daily emails</span>
+                <input
+                  max={settings?.bounds.max_emails_per_day}
+                  min={1}
+                  onChange={(event) => setSettingsDraft({ ...settingsDraft, max_emails_per_day: event.target.value })}
+                  type="number"
+                  value={settingsDraft.max_emails_per_day}
+                />
+              </label>
+              <label>
+                <span>API spend cents</span>
+                <input
+                  max={settings?.bounds.max_api_spend_cents_per_day}
+                  min={1}
+                  onChange={(event) =>
+                    setSettingsDraft({ ...settingsDraft, max_api_spend_cents_per_day: event.target.value })
+                  }
+                  type="number"
+                  value={settingsDraft.max_api_spend_cents_per_day}
+                />
+              </label>
+              <button disabled={isBusy} type="submit">
+                Save settings
+              </button>
+            </form>
+          ) : (
+            <p className="console-muted">Settings unavailable.</p>
+          )}
+        </article>
       </section>
 
       <section className="console-split">
