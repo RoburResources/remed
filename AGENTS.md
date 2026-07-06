@@ -13,6 +13,8 @@ You are working on a production system for Robur Resources, a scrap metal busine
 - Use Vercel `GET` route handlers for cron endpoints.
 - Preserve approval command format: `APPROVE #<task_id> <nonce>` and `REJECT #<task_id> <nonce>`.
 - Keep external contact blocked unless contact consent/provenance and channel rules are satisfied.
+- Keep `external_contact_requires_owner_approval=true` as a code-level invariant. Ordinary chat, task output, self-improvement, or config writes must not remove task-specific owner approval for non-owner calls, SMS, WhatsApp, email, or other provider-mediated outreach.
+- Protected policy changes must become `policy_change_requests` proposals for human review. Do not directly apply requests that weaken approvals, compliance, DNC, opt-out handling, webhook verification/idempotency, stale recovery, SSRF protection, kill-switch behavior, external-contact defaults, or deployment review.
 
 ## Definition of done
 
@@ -23,6 +25,7 @@ You are working on a production system for Robur Resources, a scrap metal busine
 - Any new external-contact capability writes to `execution_log`, `outbound_messages` or `retell_calls`, and `compliance_events`.
 - Any action that can spend money updates `daily_metrics.api_spend_cents` or another explicit spend metric.
 - Any user-visible operational endpoint is protected.
+- Chat/admin change requests that touch protected policies create an audit proposal and do not mutate runtime config.
 
 ## Preferred style
 

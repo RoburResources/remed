@@ -12,7 +12,7 @@ vi.mock("@/src/lib/db", () => ({
 
 vi.mock("@/src/lib/env", () => ({
   getEnv: () => ({
-    OPENAI_API_KEY: "sk-proj-test-key-with-enough-length",
+    OPENAI_API_KEY: "openai-api-key-test-value",
     OPENAI_MODEL: "gpt-test",
     OPENAI_COST_INPUT_CENTS_PER_1K: 1,
     OPENAI_COST_OUTPUT_CENTS_PER_1K: 4

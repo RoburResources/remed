@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { parseApprovalCommand, resolveApprovalCommand } from "@/src/lib/approval";
-import { logExecution, recordOptOutByPhone, recordWebhookEvent, setConfig } from "@/src/lib/db";
+import { createPolicyChangeRequest, logExecution, recordOptOutByPhone, recordWebhookEvent, setConfig } from "@/src/lib/db";
 import { getEnv } from "@/src/lib/env";
 import { parseFormEncoded, parseInboundSms, sendSms, verifyTwilioSignature } from "@/src/lib/integrations/twilio";
 import { sha256Hex } from "@/src/lib/crypto";
@@ -89,9 +89,25 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   if (upper === "START") {
-    await setConfig("kill_switch_active", false, "Kill switch deactivated by owner SMS START.");
-    await setConfig("system_status", "active", "Resumed by owner START command.");
-    await sendSms(env.OWNER_PHONE, "[Robur AI] Autonomous operations RESUMED.");
+    const proposal = await createPolicyChangeRequest({
+      requestedBy: sms.from,
+      requestSource: "twilio_sms",
+      requestText: "Owner SMS START requested kill_switch_active=false",
+      riskLevel: "high",
+      protectedPolicyKeys: ["kill_switch_active"],
+      proposedChangeSummary: "Owner requested deactivating the kill switch by SMS START.",
+      proposedDiffOrConfig: {
+        config_key: "kill_switch_active",
+        proposed_value: false
+      },
+      auditMetadata: {
+        message_sid: sms.messageSid
+      }
+    });
+    await sendSms(
+      env.OWNER_PHONE,
+      `[Robur AI] START is a protected policy change and was saved for review as proposal #${proposal.id}. The kill switch remains active.`
+    );
     return emptyTwiml();
   }
 

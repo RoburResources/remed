@@ -1,5 +1,6 @@
 import { getConfig, getContactById, recordComplianceEvent } from "@/src/lib/db";
 import { getEnv } from "@/src/lib/env";
+import { assertExternalContactOwnerApproval } from "@/src/lib/policy";
 import { ContactChannel, Task } from "@/src/lib/types";
 
 interface ComplianceDecision {
@@ -74,6 +75,8 @@ export async function assertExternalContactAllowed(task: Task, channel: ContactC
   if (!enabled) {
     throw new Error("External contact disabled by system_config.external_contact_enabled");
   }
+
+  assertExternalContactOwnerApproval(task);
 
   const contactId = getPayloadNumber(task, "contact_id");
   if (!contactId) {

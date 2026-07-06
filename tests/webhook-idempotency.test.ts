@@ -5,6 +5,7 @@ import { extractMakeWebhookEventId } from "@/src/lib/integrations/email";
 import { extractRetellEventId } from "@/src/lib/integrations/retell";
 
 const logExecution = vi.hoisted(() => vi.fn());
+const createPolicyChangeRequest = vi.hoisted(() => vi.fn());
 const recordWebhookEvent = vi.hoisted(() => vi.fn());
 const recordOptOutByPhone = vi.hoisted(() => vi.fn());
 const recordOptOutByEmail = vi.hoisted(() => vi.fn());
@@ -14,6 +15,7 @@ const updateRetellCallByCallId = vi.hoisted(() => vi.fn());
 const completeTaskIfOpen = vi.hoisted(() => vi.fn());
 
 vi.mock("@/src/lib/db", () => ({
+  createPolicyChangeRequest,
   logExecution,
   recordWebhookEvent,
   recordOptOutByPhone,
@@ -37,6 +39,7 @@ vi.mock("@/src/lib/env", () => ({
 describe("webhook idempotency", () => {
   beforeEach(() => {
     recordWebhookEvent.mockReset();
+    createPolicyChangeRequest.mockReset();
     logExecution.mockReset();
     recordOptOutByPhone.mockReset();
     recordOptOutByEmail.mockReset();

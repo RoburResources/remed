@@ -37,13 +37,13 @@ describe("webhook signature verification", () => {
       MessageSid: "SM123",
       To: "+61000000000"
     };
-    const token = "auth_token";
+    const twilioAuth = "auth_token";
     const payload = Object.keys(params)
       .sort()
       .reduce((acc, key) => `${acc}${key}${params[key as keyof typeof params]}`, url);
-    const signature = hmacBase64("sha1", token, payload);
+    const signature = hmacBase64("sha1", twilioAuth, payload);
 
-    expect(verifyTwilioSignature({ url, params, authToken: token, signature })).toBe(true);
+    expect(verifyTwilioSignature({ url, params, authToken: twilioAuth, signature })).toBe(true);
     expect(verifyTwilioSignature({ url, params, authToken: "wrong", signature })).toBe(false);
   });
 });

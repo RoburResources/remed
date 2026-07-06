@@ -92,6 +92,27 @@ export interface DailyMetrics {
   updated_at: string;
 }
 
+export interface PolicyChangeRequest {
+  id: number;
+  created_at: string;
+  requested_by: string;
+  request_source: string;
+  request_text: string;
+  risk_level: "low" | "medium" | "high" | "critical";
+  protected_policy_keys: string[];
+  proposed_change_summary: string;
+  proposed_diff_or_config: Record<string, unknown>;
+  status: "pending_review" | "approved" | "rejected" | "applied" | "expired";
+  owner_approval_required: boolean;
+  owner_approved_at: string | null;
+  owner_approved_by: string | null;
+  expires_at: string | null;
+  applied_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  audit_metadata: Record<string, unknown>;
+}
+
 export interface GeneratedTask {
   goal_id?: number | null;
   source: string;

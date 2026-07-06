@@ -2,6 +2,7 @@ import { hashApprovalNonce, randomNumericNonce } from "@/src/lib/crypto";
 import { assertDailyLimit, getConfig, logExecution, updateTask } from "@/src/lib/db";
 import { getEnv } from "@/src/lib/env";
 import { sendSms } from "@/src/lib/integrations/twilio";
+import { isExternalContactActionType, isOwnerPhoneTaskTarget } from "@/src/lib/policy";
 import { supabaseAdmin } from "@/src/lib/supabase";
 import { Task } from "@/src/lib/types";
 
@@ -30,7 +31,12 @@ export async function taskRequiresApproval(task: Task): Promise<boolean> {
     return false;
   }
 
-  if (task.external_contact && task.action_type !== "briefing") {
+  const env = getEnv();
+  if (
+    (task.external_contact || isExternalContactActionType(task.action_type)) &&
+    task.action_type !== "briefing" &&
+    !isOwnerPhoneTaskTarget(task, env.OWNER_PHONE)
+  ) {
     return true;
   }
 
@@ -46,6 +52,7 @@ export async function requestTaskApproval(task: Task, reason: string): Promise<v
   const nonce = randomNumericNonce(6);
   const nonceHash = hashApprovalNonce(task.id, nonce, env.APPROVAL_SECRET);
   const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString();
+  const approvalContext = buildApprovalContext(task, expiresAt);
 
   await updateTask(task.id, {
     status: "awaiting_approval",
@@ -57,7 +64,8 @@ export async function requestTaskApproval(task: Task, reason: string): Promise<v
     result_summary: `Awaiting approval: ${reason}`,
     metadata: {
       ...task.metadata,
-      approval_reason: reason
+      approval_reason: reason,
+      approval_context: approvalContext
     }
   });
 
@@ -74,6 +82,46 @@ export async function requestTaskApproval(task: Task, reason: string): Promise<v
     details: { reason, expires_at: expiresAt },
     outcome: "pending"
   });
+}
+
+export function assertApprovalCommandMayResolve(
+  task: Task,
+  command: ApprovalCommand,
+  input: {
+    actorPhone: string;
+    ownerPhone: string;
+    approvalSecret: string;
+    nowMs?: number;
+  }
+): void {
+  if (input.actorPhone !== input.ownerPhone) {
+    throw new Error("Only the owner phone can approve/reject tasks");
+  }
+
+  if (task.id !== command.taskId) {
+    throw new Error(`Approval command for task #${command.taskId} cannot approve task #${task.id}`);
+  }
+
+  if (task.status !== "awaiting_approval") {
+    throw new Error(`Task #${command.taskId} is not awaiting approval`);
+  }
+
+  if (task.approval_used_at) {
+    throw new Error(`Task #${command.taskId} approval was already used`);
+  }
+
+  if (!task.approval_nonce_hash) {
+    throw new Error(`Task #${command.taskId} has no approval nonce`);
+  }
+
+  if (task.approval_expires_at && new Date(task.approval_expires_at).getTime() < (input.nowMs ?? Date.now())) {
+    throw new Error(`Task #${command.taskId} approval expired`);
+  }
+
+  const expectedHash = hashApprovalNonce(task.id, command.nonce, input.approvalSecret);
+  if (expectedHash !== task.approval_nonce_hash) {
+    throw new Error("Invalid approval nonce");
+  }
 }
 
 export async function resolveApprovalCommand(command: ApprovalCommand, actorPhone: string): Promise<string> {
@@ -105,12 +153,32 @@ export async function resolveApprovalCommand(command: ApprovalCommand, actorPhon
     throw new Error(`Task #${command.taskId} is not awaiting approval`);
   }
 
-  if (task.approval_used_at) {
-    throw new Error(`Task #${command.taskId} approval was already used`);
-  }
+  try {
+    assertApprovalCommandMayResolve(task, command, {
+      actorPhone,
+      ownerPhone: env.OWNER_PHONE,
+      approvalSecret: env.APPROVAL_SECRET
+    });
+  } catch (error) {
+    const err = error as Error;
+    if (err.message.includes("approval expired")) {
+      await updateTask(task.id, {
+        status: "cancelled",
+        result_summary: "Approval expired",
+        approval_used_at: new Date().toISOString()
+      });
+    }
 
-  if (!task.approval_nonce_hash) {
-    throw new Error(`Task #${command.taskId} has no approval nonce`);
+    if (err.message.includes("Invalid approval nonce")) {
+      await logExecution({
+        taskId: task.id,
+        actionType: "approval_nonce_invalid",
+        details: { actor_phone: actorPhone },
+        outcome: "failure"
+      });
+    }
+
+    throw err;
   }
 
   if (task.approval_expires_at && new Date(task.approval_expires_at).getTime() < Date.now()) {
@@ -120,17 +188,6 @@ export async function resolveApprovalCommand(command: ApprovalCommand, actorPhon
       approval_used_at: new Date().toISOString()
     });
     throw new Error(`Task #${command.taskId} approval expired`);
-  }
-
-  const expectedHash = hashApprovalNonce(task.id, command.nonce, env.APPROVAL_SECRET);
-  if (expectedHash !== task.approval_nonce_hash) {
-    await logExecution({
-      taskId: task.id,
-      actionType: "approval_nonce_invalid",
-      details: { actor_phone: actorPhone },
-      outcome: "failure"
-    });
-    throw new Error("Invalid approval nonce");
   }
 
   const now = new Date().toISOString();
@@ -176,4 +233,31 @@ export async function resolveApprovalCommand(command: ApprovalCommand, actorPhon
   });
 
   return `Task #${task.id} approved and returned to the execution queue.`;
+}
+
+function buildApprovalContext(task: Task, expiresAt: string): Record<string, unknown> {
+  const channel = task.action_type;
+  const target =
+    task.action_payload.to_number ??
+    task.action_payload.phone ??
+    task.action_payload.to_email ??
+    task.action_payload.email ??
+    null;
+  const content =
+    task.action_payload.body ??
+    task.action_payload.script ??
+    task.action_payload.call_objective ??
+    task.action_payload.research_goal ??
+    task.description;
+
+  return {
+    task_id: task.id,
+    channel,
+    target_contact_id: task.action_payload.contact_id ?? null,
+    target,
+    content_summary: typeof content === "string" ? content.slice(0, 500) : null,
+    estimated_value: task.estimated_value,
+    external_contact: task.external_contact || isExternalContactActionType(task.action_type),
+    expires_at: expiresAt
+  };
 }

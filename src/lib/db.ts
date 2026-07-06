@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/src/lib/supabase";
-import { DailyMetrics, ExecutionOutcome, GeneratedTask, Goal, Task, Contact } from "@/src/lib/types";
+import { DailyMetrics, ExecutionOutcome, GeneratedTask, Goal, Task, Contact, PolicyChangeRequest } from "@/src/lib/types";
 import { idempotencyKey } from "@/src/lib/crypto";
+import { assertMayChangePolicy, redactSensitiveText } from "@/src/lib/policy";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -22,6 +23,12 @@ export async function getConfig<T>(key: string, fallback: T): Promise<T> {
 }
 
 export async function setConfig(key: string, value: unknown, description?: string): Promise<void> {
+  await assertMayChangePolicy({
+    key,
+    value,
+    source: "setConfig"
+  });
+
   const { error } = await supabaseAdmin()
     .from("system_config")
     .upsert(
@@ -34,6 +41,54 @@ export async function setConfig(key: string, value: unknown, description?: strin
     );
 
   throwIfError(error, `setConfig(${key})`);
+}
+
+export async function createPolicyChangeRequest(input: {
+  requestedBy: string;
+  requestSource: string;
+  requestText: string;
+  riskLevel: PolicyChangeRequest["risk_level"];
+  protectedPolicyKeys: string[];
+  proposedChangeSummary: string;
+  proposedDiffOrConfig?: JsonRecord;
+  expiresAt?: string | null;
+  auditMetadata?: JsonRecord;
+}): Promise<PolicyChangeRequest> {
+  const { data, error } = await supabaseAdmin()
+    .from("policy_change_requests")
+    .insert({
+      requested_by: redactSensitiveText(input.requestedBy),
+      request_source: input.requestSource,
+      request_text: redactSensitiveText(input.requestText),
+      risk_level: input.riskLevel,
+      protected_policy_keys: input.protectedPolicyKeys,
+      proposed_change_summary: redactSensitiveText(input.proposedChangeSummary),
+      proposed_diff_or_config: input.proposedDiffOrConfig ?? {},
+      owner_approval_required: true,
+      expires_at: input.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      audit_metadata: input.auditMetadata ?? {}
+    })
+    .select("*")
+    .single();
+
+  throwIfError(error, "createPolicyChangeRequest");
+  if (!data) {
+    throw new Error("createPolicyChangeRequest: no row returned");
+  }
+
+  const request = data as PolicyChangeRequest;
+  await logExecution({
+    actionType: "policy_change_proposal_created",
+    details: {
+      policy_change_request_id: request.id,
+      risk_level: request.risk_level,
+      protected_policy_keys: request.protected_policy_keys,
+      request_source: request.request_source
+    },
+    outcome: "pending"
+  });
+
+  return request;
 }
 
 export async function isKillSwitchActive(): Promise<boolean> {

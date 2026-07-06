@@ -1,6 +1,7 @@
 insert into public.system_config(config_key, config_value, description) values
   ('system_status', to_jsonb('paused'::text), 'System remains paused until credentials are rotated and Michael approves live operation.'),
   ('kill_switch_active', 'true'::jsonb, 'Global kill switch; true blocks cron task claiming.'),
+  ('external_contact_requires_owner_approval', 'true'::jsonb, 'Code-level invariant: non-owner external contact requires task-specific owner approval.'),
   ('max_calls_per_day', to_jsonb(20), 'Maximum outbound calls per day, including owner briefings.'),
   ('max_emails_per_day', to_jsonb(100), 'Maximum outbound emails per day.'),
   ('max_sms_per_day', to_jsonb(100), 'Maximum outbound SMS per day.'),

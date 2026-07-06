@@ -8,13 +8,22 @@ export async function GET(request: NextRequest) {
   return withRouteErrors(async () => {
     requireDashboardAuth(request);
 
-    const [metrics, tasks, opportunities, killSwitch, systemStatus, externalContactEnabled] = await Promise.all([
+    const [
+      metrics,
+      tasks,
+      opportunities,
+      killSwitch,
+      systemStatus,
+      externalContactEnabled,
+      externalContactRequiresOwnerApproval
+    ] = await Promise.all([
       getTodayMetrics(),
       getRecentTasks(100),
       getRecentOpportunities(20),
       getConfig<boolean>("kill_switch_active", true),
       getConfig<string>("system_status", "unknown"),
-      getConfig<boolean>("external_contact_enabled", false)
+      getConfig<boolean>("external_contact_enabled", false),
+      getConfig<boolean>("external_contact_requires_owner_approval", true)
     ]);
 
     const taskCounts = tasks.reduce<Record<string, number>>((acc, task) => {
@@ -27,6 +36,7 @@ export async function GET(request: NextRequest) {
       system_status: systemStatus,
       kill_switch_active: killSwitch,
       external_contact_enabled: externalContactEnabled,
+      external_contact_requires_owner_approval: externalContactRequiresOwnerApproval,
       daily_metrics: metrics,
       task_counts: taskCounts,
       recent_opportunities: opportunities

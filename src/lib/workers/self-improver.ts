@@ -1,5 +1,6 @@
-import { getRecentEvaluations, isKillSwitchActive, logExecution, setConfig } from "@/src/lib/db";
+import { createPolicyChangeRequest, getRecentEvaluations, isKillSwitchActive, logExecution, setConfig } from "@/src/lib/db";
 import { createStructuredOutput } from "@/src/lib/openai";
+import { isProtectedPolicyKey, redactSensitiveText } from "@/src/lib/policy";
 import { WorkerResult } from "@/src/lib/types";
 
 interface ImprovementOutput {
@@ -40,9 +41,23 @@ export async function runSelfImprover(): Promise<WorkerResult> {
     user: `Recent evaluations:\n${JSON.stringify(evaluations.slice(0, 50))}`
   });
 
-  await setConfig("priority_weight_calls", clamp(result.data.call_weight), "Self-improver tuned call priority weight.");
-  await setConfig("priority_weight_email", clamp(result.data.email_weight), "Self-improver tuned email priority weight.");
-  await setConfig("priority_weight_research", clamp(result.data.research_weight), "Self-improver tuned research priority weight.");
+  const applied = await applySelfImprovementConfigUpdates([
+    {
+      key: "priority_weight_calls",
+      value: clamp(result.data.call_weight),
+      description: "Self-improver tuned call priority weight."
+    },
+    {
+      key: "priority_weight_email",
+      value: clamp(result.data.email_weight),
+      description: "Self-improver tuned email priority weight."
+    },
+    {
+      key: "priority_weight_research",
+      value: clamp(result.data.research_weight),
+      description: "Self-improver tuned research priority weight."
+    }
+  ]);
 
   await logExecution({
     actionType: "self_improvement",
@@ -54,10 +69,52 @@ export async function runSelfImprover(): Promise<WorkerResult> {
     ok: true,
     message: "Self-improvement weights updated.",
     details: {
+      applied_config_updates: applied.applied,
+      proposed_policy_changes: applied.proposed,
       key_insights: result.data.key_insights,
       safety_recommendations: result.data.safety_recommendations
     }
   };
+}
+
+export async function applySelfImprovementConfigUpdates(
+  updates: Array<{ key: string; value: unknown; description?: string }>
+): Promise<{ applied: string[]; proposed: string[] }> {
+  const applied: string[] = [];
+  const proposed: string[] = [];
+
+  for (const update of updates) {
+    if (isProtectedPolicyKey(update.key)) {
+      const proposal = await createPolicyChangeRequest({
+        requestedBy: "self_improver",
+        requestSource: "self_improver",
+        requestText: `Self-improver proposed changing ${update.key}`,
+        riskLevel: "high",
+        protectedPolicyKeys: [update.key],
+        proposedChangeSummary: `Self-improver proposed a protected policy change for ${update.key}. It was not applied.`,
+        proposedDiffOrConfig: {
+          key: update.key,
+          proposed_value: redactSensitiveText(String(update.value))
+        },
+        auditMetadata: {
+          blocked_by: "protected_policy_guard"
+        }
+      });
+
+      proposed.push(String(proposal.id));
+      await logExecution({
+        actionType: "self_improvement_policy_change_blocked",
+        details: { key: update.key, policy_change_request_id: proposal.id },
+        outcome: "partial"
+      });
+      continue;
+    }
+
+    await setConfig(update.key, update.value, update.description);
+    applied.push(update.key);
+  }
+
+  return { applied, proposed };
 }
 
 function clamp(value: number): number {

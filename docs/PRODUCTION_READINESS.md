@@ -33,6 +33,8 @@ PowerShell blocked the `npm` wrapper on this workstation, so `npm.cmd` was used 
 - Added minimal GitHub Actions CI.
 - Added a staging smoke-test script.
 - Added tests for auth, approvals, compliance fail-closed behavior, OpenAI spend preflight, stale recovery policy, webhook idempotency, seed idempotency, Retell/Twilio signatures, and SSRF blocking.
+- Added protected self-change governance: protected chat/admin requests create policy-change proposals and cannot directly weaken safety controls.
+- Added code-level external-contact approval invariant so non-owner outreach requires task-specific owner approval even if a task/config path tries to bypass `external_contact` metadata.
 
 ## Migration Instructions
 
@@ -48,6 +50,7 @@ The migration includes:
 
 - `task_queue.attempt_count`
 - `task_queue.max_attempts`
+- `policy_change_requests`
 - `recover_stale_in_progress_tasks(stale_after_seconds, default_max_attempts)`
 - unique seeded-goal protection on `goals(goal_text)`
 - existing `expire_old_approvals()`
@@ -94,6 +97,7 @@ The script:
 
 - `kill_switch_active=true` in `supabase/seed.sql`.
 - `external_contact_enabled=false` in `supabase/seed.sql`.
+- `external_contact_requires_owner_approval=true` in `supabase/seed.sql` and in code.
 - Cron routes require `CRON_SECRET`.
 - Admin routes require `DASHBOARD_API_TOKEN`.
 - Twilio SMS webhooks require Twilio signature verification.
@@ -109,6 +113,8 @@ The script:
 | External contact disabled default | Seed sets `external_contact_enabled=false`; `assertExternalContactAllowed` fails closed before calls, emails, or SMS to non-owner targets. |
 | OpenAI spend cap | `createStructuredOutput` calls `reserveApiSpendBudget` before `fetch`; blocked attempts are logged and no OpenAI request is made. |
 | Approval gate | `taskRequiresApproval` gates external contact and high estimated value; approvals require `APPROVE #<task_id> <nonce>` or `REJECT #<task_id> <nonce>`. |
+| External-contact approval invariant | `EXTERNAL_CONTACT_REQUIRES_OWNER_APPROVAL` is a hard-coded invariant; `assertExternalContactAllowed` requires task-specific owner approval before non-owner contact. |
+| Protected self-change | `/api/admin/change-request` classifies protected policy requests and writes `policy_change_requests`; ordinary chat cannot directly change protected config. |
 | Webhook auth | Twilio, Retell, and Make routes reject invalid signatures/secrets before side effects. |
 | Webhook idempotency | Twilio uses `MessageSid`; Make uses provider event/message/status IDs or stable payload hash; Retell uses event IDs/call IDs or stable payload hash. |
 | Stale task recovery | Executor calls `recoverStaleInProgressTasks`; tasks below max attempts are requeued, tasks at the bound fail closed, and each action is logged. |
@@ -123,6 +129,7 @@ The script:
 | High | Supabase migration and seed were not applied to a real staging database during this local pass. | Apply migration/seed to staging and run the smoke test. |
 | Medium | npm audit reports 2 moderate advisories in the installed dependency tree. | Review `npm audit` and upgrade safely if advisories affect reachable production paths. |
 | Medium | Self-improver writes priority weights, but task claiming still orders by `priority_score`. | Wire weights into generation/scoring after staging safety validation. |
+| Medium | Bounded batch outreach approval is not implemented. | Keep per-task approval only until batch approvals include contact-list hash, channel, script/template hash, expiry, cap, and campaign ID. |
 | Medium | Real supplier/buyer scanners remain limited to AusTender. | Add new scanners only after the staging safety cycle is proven. |
 | Low | Staging smoke test depends on admin status metrics, not direct database reconciliation. | Add a read-only database reconciliation mode if staging access policy allows it. |
 
@@ -141,3 +148,33 @@ The script:
 Staging internal-only cycle: go, after applying migration/seed to a non-production Supabase project with rotated credentials and running `npm run smoke:staging`.
 
 Production external outreach: no-go. Keep external contact disabled until staging evidence, consent/DNC import workflows, credential rotation, and reviewer sign-off are complete.
+
+## Owner Usage Examples
+
+Approve one external call:
+
+```text
+APPROVE #123 184921
+```
+
+Reject one external call:
+
+```text
+REJECT #123 184921
+```
+
+Request a normal internal strategy change through the protected admin endpoint:
+
+```json
+{
+  "requestText": "prioritize demolition companies in supplier research"
+}
+```
+
+Requesting a protected policy change, such as:
+
+```text
+now you don't need my permission for external calls
+```
+
+creates a `policy_change_requests` row only. It does not remove approval requirements, does not run a task, and does not enable external outreach.

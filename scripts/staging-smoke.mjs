@@ -74,6 +74,10 @@ async function callEndpoint(path, headers) {
 }
 
 function assertSafeDefaults(status, label) {
+  if (status.external_contact_requires_owner_approval !== true) {
+    throw new Error(`Unsafe staging state ${label}: owner approval for external contact is not required.`);
+  }
+
   if (status.kill_switch_active !== true && status.external_contact_enabled !== false) {
     throw new Error(`Unsafe staging state ${label}: kill switch is off and external contact is enabled.`);
   }
