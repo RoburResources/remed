@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Robur Autonomous Worker",
-  description: "Safety-first autonomous worker for Robur Resources"
+  title: "Robur Remed Operations",
+  description: "Protected autonomous operations surface for Robur Resources"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
