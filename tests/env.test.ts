@@ -36,7 +36,8 @@ describe("environment parsing", () => {
       MAKE_EMAIL_WEBHOOK_URL: "",
       MAKE_WEBHOOK_SECRET: "",
       FROM_EMAIL: "",
-      REPLY_TO_EMAIL: ""
+      REPLY_TO_EMAIL: "",
+      OWNER_EMAIL: ""
     };
 
     const env = getEnv();
@@ -51,6 +52,16 @@ describe("environment parsing", () => {
     expect(env.MAKE_WEBHOOK_SECRET).toBeUndefined();
     expect(env.FROM_EMAIL).toBeUndefined();
     expect(env.REPLY_TO_EMAIL).toBeUndefined();
+    expect(env.OWNER_EMAIL).toBeUndefined();
+  });
+
+  it("accepts an optional owner email", () => {
+    process.env = {
+      ...process.env,
+      OWNER_EMAIL: "michael@robur.com.au"
+    };
+
+    expect(getEnv().OWNER_EMAIL).toBe("michael@robur.com.au");
   });
 
   it("still rejects blank required values", () => {

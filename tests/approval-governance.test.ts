@@ -13,6 +13,7 @@ vi.mock("@/src/lib/db", () => ({
 vi.mock("@/src/lib/env", () => ({
   getEnv: () => ({
     OWNER_PHONE: "+61000000000",
+    OWNER_EMAIL: "michael@robur.com.au",
     APPROVAL_SECRET: "approval-secret-with-enough-length"
   })
 }));
@@ -51,6 +52,20 @@ describe("owner approval governance", () => {
           action_type: "briefing",
           external_contact: false,
           action_payload: { to_number: "+61000000000" }
+        })
+      )
+    ).resolves.toBe(false);
+  });
+
+  it("does not require outside-contact approval for owner email", async () => {
+    const { taskRequiresApproval } = await import("@/src/lib/approval");
+
+    await expect(
+      taskRequiresApproval(
+        makeTask({
+          action_type: "send_email",
+          external_contact: true,
+          action_payload: { to_email: "Michael@Robur.com.au" }
         })
       )
     ).resolves.toBe(false);

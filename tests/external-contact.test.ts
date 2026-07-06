@@ -7,7 +7,8 @@ const recordComplianceEvent = vi.hoisted(() => vi.fn());
 
 vi.mock("@/src/lib/env", () => ({
   getEnv: () => ({
-    OWNER_PHONE: "+61400000000"
+    OWNER_PHONE: "+61400000000",
+    OWNER_EMAIL: "michael@robur.com.au"
   })
 }));
 
@@ -38,6 +39,20 @@ describe("external contact compliance gate", () => {
           action_payload: { to_number: "+61400000000" }
         }),
         "call"
+      )
+    ).resolves.toBeUndefined();
+  });
+
+  it("allows owner email even when outside contact is disabled", async () => {
+    getConfig.mockResolvedValue(false);
+    const { assertExternalContactAllowed } = await import("@/src/lib/compliance");
+
+    await expect(
+      assertExternalContactAllowed(
+        makeTask({
+          action_payload: { to_email: "Michael@Robur.com.au" }
+        }),
+        "email"
       )
     ).resolves.toBeUndefined();
   });

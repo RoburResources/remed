@@ -247,6 +247,13 @@ export function isOwnerPhoneTaskTarget(task: Task, ownerPhone: string): boolean 
   return typeof value === "string" && value === ownerPhone;
 }
 
+export function isOwnerEmailTaskTarget(task: Task, ownerEmail?: string): boolean {
+  if (!ownerEmail) return false;
+
+  const value = task.action_payload.to_email ?? task.action_payload.email;
+  return typeof value === "string" && value.toLowerCase() === ownerEmail.toLowerCase();
+}
+
 export function redactSensitiveText(value: string): string {
   return value
     .replace(/sk-[A-Za-z0-9_-]+/g, "[REDACTED_API_KEY]")

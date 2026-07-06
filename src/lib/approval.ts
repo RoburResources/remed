@@ -2,7 +2,7 @@ import { hashApprovalNonce, randomNumericNonce } from "@/src/lib/crypto";
 import { assertDailyLimit, getConfig, logExecution, updateTask } from "@/src/lib/db";
 import { getEnv } from "@/src/lib/env";
 import { sendSms } from "@/src/lib/integrations/twilio";
-import { isExternalContactActionType, isOwnerPhoneTaskTarget } from "@/src/lib/policy";
+import { isExternalContactActionType, isOwnerEmailTaskTarget, isOwnerPhoneTaskTarget } from "@/src/lib/policy";
 import { supabaseAdmin } from "@/src/lib/supabase";
 import { Task } from "@/src/lib/types";
 
@@ -34,7 +34,8 @@ export async function taskRequiresApproval(task: Task): Promise<boolean> {
   const env = getEnv();
   if (
     (task.external_contact || isExternalContactActionType(task.action_type)) &&
-    !isOwnerPhoneTaskTarget(task, env.OWNER_PHONE)
+    !isOwnerPhoneTaskTarget(task, env.OWNER_PHONE) &&
+    !isOwnerEmailTaskTarget(task, env.OWNER_EMAIL)
   ) {
     return true;
   }

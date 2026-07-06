@@ -50,7 +50,7 @@ This build is safe-by-default. It does not contact external people unless:
 - high-value actions have a valid owner approval nonce,
 - the provider call/message succeeds.
 
-Owner briefings to `OWNER_PHONE` are separate from marketing/outreach and are still counted against the call limit.
+Owner briefings to `OWNER_PHONE` and email to `OWNER_EMAIL` are separate from marketing/outreach and are still counted against the relevant daily limits.
 
 ## Owner approvals and change requests
 

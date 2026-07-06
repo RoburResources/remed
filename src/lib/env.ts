@@ -27,6 +27,7 @@ const envSchema = z.object({
   PUBLIC_BASE_URL: z.string().url(),
 
   OWNER_PHONE: z.string().regex(/^\+\d{8,15}$/),
+  OWNER_EMAIL: optionalEnv(z.string().email()),
 
   TWILIO_ACCOUNT_SID: optionalEnv(z.string()),
   TWILIO_AUTH_TOKEN: optionalEnv(z.string()),
