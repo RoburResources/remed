@@ -22,7 +22,8 @@ vi.mock("@/src/lib/env", () => ({
     RETELL_AGENT_ID: "agent-id",
     RETELL_FROM_NUMBER: "+61411111111"
   }),
-  hasRetellCredentials: () => true
+  hasRetellCredentials: () => true,
+  hasRetellWebCallCredentials: () => true
 }));
 
 describe("admin settings route", () => {
@@ -50,6 +51,7 @@ describe("admin settings route", () => {
     expect(response.status).toBe(200);
     expect(body.voice).toMatchObject({
       retell_configured: true,
+      retell_web_call_configured: true,
       owner_phone_configured: true,
       owner_email_configured: true
     });

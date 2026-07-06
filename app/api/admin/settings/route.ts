@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getConfig, logExecution, setConfig } from "@/src/lib/db";
-import { getEnv, hasRetellCredentials } from "@/src/lib/env";
+import { getEnv, hasRetellCredentials, hasRetellWebCallCredentials } from "@/src/lib/env";
 import { requireDashboardAuth, withRouteErrors } from "@/src/lib/http";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +72,7 @@ async function readSettings() {
     ok: true,
     voice: {
       retell_configured: hasRetellCredentials(env),
+      retell_web_call_configured: hasRetellWebCallCredentials(env),
       retell_briefings_enabled: retellBriefingsEnabled,
       owner_phone_configured: Boolean(env.OWNER_PHONE),
       owner_email_configured: Boolean(env.OWNER_EMAIL),

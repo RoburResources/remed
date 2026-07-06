@@ -721,6 +721,59 @@ h2 {
   margin-bottom: 0;
 }
 
+.voice-session {
+  display: grid;
+  gap: 10px;
+  min-height: 104px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--blue);
+  border-radius: 8px;
+  background: #fbfdfb;
+  padding: 14px;
+}
+
+.voice-session > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.voice-session span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.voice-session strong {
+  color: var(--ink);
+  font-size: 1.35rem;
+  text-align: right;
+}
+
+.voice-session p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.voice-session-active,
+.voice-session-agent-speaking {
+  border-left-color: var(--green);
+}
+
+.voice-session-starting {
+  border-left-color: var(--amber);
+}
+
+.voice-session-error {
+  border-left-color: #b42318;
+  background: #fff8f6;
+}
+
 .metric-list,
 .status-counts,
 .settings-list {

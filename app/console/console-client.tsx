@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import type { RetellWebClient as RetellWebClientInstance } from "retell-client-js-sdk";
 
 type DailyMetrics = {
   tasks_generated?: number;
@@ -51,6 +52,7 @@ type SettingsPayload = {
   ok: boolean;
   voice: {
     retell_configured: boolean;
+    retell_web_call_configured: boolean;
     retell_briefings_enabled: boolean;
     owner_phone_configured: boolean;
     owner_email_configured: boolean;
@@ -79,6 +81,7 @@ type SessionPayload = {
 };
 
 type ConsoleState = "checking" | "locked" | "ready";
+type BrowserVoiceState = "idle" | "starting" | "active" | "agent-speaking" | "ended" | "error";
 
 async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -120,7 +123,26 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+function browserVoiceLabel(state: BrowserVoiceState): string {
+  switch (state) {
+    case "starting":
+      return "Starting";
+    case "active":
+      return "Live";
+    case "agent-speaking":
+      return "Agent speaking";
+    case "ended":
+      return "Ended";
+    case "error":
+      return "Needs attention";
+    case "idle":
+    default:
+      return "Idle";
+  }
+}
+
 export function ConsoleClient() {
+  const retellClientRef = useRef<RetellWebClientInstance | null>(null);
   const [state, setState] = useState<ConsoleState>("checking");
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [settings, setSettings] = useState<SettingsPayload | null>(null);
@@ -130,6 +152,10 @@ export function ConsoleClient() {
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+  const [browserVoiceState, setBrowserVoiceState] = useState<BrowserVoiceState>("idle");
+  const [browserVoiceCallId, setBrowserVoiceCallId] = useState<string | null>(null);
+  const [browserVoiceMuted, setBrowserVoiceMuted] = useState(false);
+  const [browserVoiceNote, setBrowserVoiceNote] = useState("Browser voice is idle.");
 
   const openTaskCount = useMemo(
     () => tasks.filter((task) => ["pending", "in_progress", "awaiting_approval"].includes(task.status)).length,
@@ -167,6 +193,13 @@ export function ConsoleClient() {
       });
   }, []);
 
+  useEffect(() => {
+    return () => {
+      retellClientRef.current?.stopCall();
+      retellClientRef.current = null;
+    };
+  }, []);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsBusy(true);
@@ -189,6 +222,12 @@ export function ConsoleClient() {
 
   async function handleLogout() {
     setIsBusy(true);
+    retellClientRef.current?.stopCall();
+    retellClientRef.current = null;
+    setBrowserVoiceState("idle");
+    setBrowserVoiceCallId(null);
+    setBrowserVoiceMuted(false);
+    setBrowserVoiceNote("Browser voice is idle.");
     await readJson<{ ok: boolean }>("/api/admin/session", { method: "DELETE" }).catch(() => undefined);
     setStatus(null);
     setSettings(null);
@@ -197,6 +236,95 @@ export function ConsoleClient() {
     setActionMessage(null);
     setState("locked");
     setIsBusy(false);
+  }
+
+  async function handleBrowserVoiceStart() {
+    if (retellClientRef.current) return;
+
+    setIsBusy(true);
+    setError(null);
+    setActionMessage(null);
+    setBrowserVoiceState("starting");
+    setBrowserVoiceNote("Opening secure voice session.");
+
+    try {
+      const result = await readJson<{ ok: boolean; call_id: string; access_token: string }>("/api/admin/voice/web-call", {
+        method: "POST",
+        body: JSON.stringify({ confirmOwnerWebCall: true })
+      });
+      const { RetellWebClient } = await import("retell-client-js-sdk");
+      const client = new RetellWebClient();
+      retellClientRef.current = client;
+      setBrowserVoiceCallId(result.call_id);
+
+      client.on("call_started", () => {
+        setBrowserVoiceState("active");
+        setBrowserVoiceNote("Voice connected.");
+        setActionMessage("Browser voice started.");
+      });
+      client.on("call_ready", () => {
+        setBrowserVoiceState((current) => (current === "agent-speaking" ? current : "active"));
+        setBrowserVoiceNote("Voice ready.");
+      });
+      client.on("agent_start_talking", () => {
+        setBrowserVoiceState("agent-speaking");
+        setBrowserVoiceNote("Agent is speaking.");
+      });
+      client.on("agent_stop_talking", () => {
+        setBrowserVoiceState("active");
+        setBrowserVoiceNote("Voice connected.");
+      });
+      client.on("call_ended", () => {
+        retellClientRef.current = null;
+        setBrowserVoiceState("ended");
+        setBrowserVoiceMuted(false);
+        setBrowserVoiceNote("Browser voice ended.");
+      });
+      client.on("error", (event: unknown) => {
+        retellClientRef.current = null;
+        setBrowserVoiceState("error");
+        setBrowserVoiceMuted(false);
+        setBrowserVoiceNote("Browser voice could not start.");
+        setError(typeof event === "string" ? event : "Browser voice failed");
+      });
+
+      await client.startCall({ accessToken: result.access_token });
+      await client.startAudioPlayback().catch(() => undefined);
+    } catch (err) {
+      retellClientRef.current?.stopCall();
+      retellClientRef.current = null;
+      setBrowserVoiceState("error");
+      setBrowserVoiceCallId(null);
+      setBrowserVoiceMuted(false);
+      setBrowserVoiceNote("Browser voice could not start.");
+      setError(err instanceof Error ? err.message : "Browser voice failed");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  function handleBrowserVoiceStop() {
+    retellClientRef.current?.stopCall();
+    retellClientRef.current = null;
+    setBrowserVoiceState("ended");
+    setBrowserVoiceMuted(false);
+    setBrowserVoiceNote("Browser voice ended.");
+  }
+
+  function handleBrowserVoiceMuteToggle() {
+    const client = retellClientRef.current;
+    if (!client) return;
+
+    if (browserVoiceMuted) {
+      client.unmute();
+      setBrowserVoiceMuted(false);
+      setBrowserVoiceNote("Microphone on.");
+      return;
+    }
+
+    client.mute();
+    setBrowserVoiceMuted(true);
+    setBrowserVoiceNote("Microphone muted.");
   }
 
   async function handleVoiceCall(type: "morning" | "evening") {
@@ -298,6 +426,9 @@ export function ConsoleClient() {
   }
 
   const metrics = status?.daily_metrics;
+  const browserVoiceConfigured = Boolean(settings?.voice.retell_web_call_configured);
+  const phoneVoiceConfigured = Boolean(settings?.voice.retell_configured);
+  const browserVoiceActive = Boolean(retellClientRef.current);
   const statusCards = [
     {
       label: "System",
@@ -361,12 +492,26 @@ export function ConsoleClient() {
         <article className="console-panel">
           <div className="panel-heading">
             <h2>Voice access</h2>
-            <span className="task-status">{settings?.voice.retell_configured ? "Ready" : "Needs config"}</span>
+            <span className="task-status">{browserVoiceConfigured ? "Configured" : "Needs config"}</span>
+          </div>
+          <div className={`voice-session voice-session-${browserVoiceState}`}>
+            <div>
+              <span>Browser voice</span>
+              <strong>{browserVoiceLabel(browserVoiceState)}</strong>
+            </div>
+            <p>
+              {browserVoiceNote}
+              {browserVoiceCallId ? <span> Call {browserVoiceCallId}</span> : null}
+            </p>
           </div>
           <div className="settings-list">
             <div>
-              <span>Retell</span>
-              <strong>{settings?.voice.retell_configured ? "Connected" : "Missing"}</strong>
+              <span>Browser voice</span>
+              <strong>{browserVoiceConfigured ? "Configured" : "Missing"}</strong>
+            </div>
+            <div>
+              <span>Phone calls</span>
+              <strong>{phoneVoiceConfigured ? "Configured" : "Missing"}</strong>
             </div>
             <div>
               <span>Owner phone</span>
@@ -382,10 +527,23 @@ export function ConsoleClient() {
             </div>
           </div>
           <div className="console-actions console-actions-wrap">
-            <button disabled={isBusy || !settings?.voice.retell_configured} onClick={() => handleVoiceCall("morning")} type="button">
+            <button
+              disabled={isBusy || !browserVoiceConfigured || browserVoiceActive}
+              onClick={handleBrowserVoiceStart}
+              type="button"
+            >
+              Talk in browser
+            </button>
+            <button disabled={!browserVoiceActive} onClick={handleBrowserVoiceMuteToggle} type="button">
+              {browserVoiceMuted ? "Unmute" : "Mute"}
+            </button>
+            <button disabled={!browserVoiceActive} onClick={handleBrowserVoiceStop} type="button">
+              End voice
+            </button>
+            <button disabled={isBusy || !phoneVoiceConfigured} onClick={() => handleVoiceCall("morning")} type="button">
               Call morning brief
             </button>
-            <button disabled={isBusy || !settings?.voice.retell_configured} onClick={() => handleVoiceCall("evening")} type="button">
+            <button disabled={isBusy || !phoneVoiceConfigured} onClick={() => handleVoiceCall("evening")} type="button">
               Call evening brief
             </button>
           </div>

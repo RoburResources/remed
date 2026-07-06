@@ -79,6 +79,10 @@ export function hasRetellCredentials(env = getEnv()): boolean {
   );
 }
 
+export function hasRetellWebCallCredentials(env = getEnv()): boolean {
+  return Boolean(env.RETELL_API_KEY && (env.RETELL_AGENT_ID || env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID));
+}
+
 export function getExecutiveAssistantAgentId(env = getEnv()): string | undefined {
   return env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID ?? env.RETELL_AGENT_ID;
 }
