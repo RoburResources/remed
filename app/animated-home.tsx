@@ -119,6 +119,9 @@ export function AnimatedHome() {
               <code>/api/admin/status</code>
             </motion.div>
           ) : null}
+          <a className="console-link" href="/console">
+            Open secure console
+          </a>
         </motion.div>
       </motion.section>
 
