@@ -8,6 +8,7 @@ This package replaces the audited Manus/Vite/Express prototype with a Vercel + S
 - Vercel cron endpoints are `GET` route handlers protected by `CRON_SECRET`.
 - Dashboard/admin APIs require `DASHBOARD_API_TOKEN`.
 - Retell outbound calls use `POST /v2/create-phone-call` with `from_number`, `to_number`, and documented one-time `override_agent_id`.
+- Owner/executive briefing calls can use `RETELL_EXECUTIVE_ASSISTANT_AGENT_ID`; default Retell agent routing is left unchanged.
 - Retell webhooks verify `X-Retell-Signature` against the raw body before updating call/task state.
 - Twilio inbound SMS verifies `X-Twilio-Signature`, uses canonical deployment URL, and restricts control commands to `OWNER_PHONE`.
 - Approval commands are task-specific and nonce-specific: `APPROVE #123 184921`.
@@ -49,7 +50,11 @@ This build is safe-by-default. It does not contact external people unless:
 - high-value actions have a valid owner approval nonce,
 - the provider call/message succeeds.
 
-Owner briefings to `OWNER_PHONE` are separate from marketing/outreach and are still counted against the call limit.
+Owner briefings to `OWNER_PHONE` and email to `OWNER_EMAIL` are separate from marketing/outreach and are still counted against the relevant daily limits.
+
+## Voice access and settings
+
+After unlocking `/console`, use the Voice access panel to trigger an owner briefing call through Retell. Use the Settings panel to turn voice briefings on/off and adjust daily call, SMS, email, and API-spend caps within the protected safety bounds.
 
 ## Owner approvals and change requests
 

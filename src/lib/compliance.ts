@@ -72,6 +72,10 @@ export async function assertExternalContactAllowed(task: Task, channel: ContactC
     return;
   }
 
+  if (channel === "email" && env.OWNER_EMAIL && targetEmail?.toLowerCase() === env.OWNER_EMAIL.toLowerCase()) {
+    return;
+  }
+
   if (!enabled) {
     throw new Error("External contact disabled by system_config.external_contact_enabled");
   }

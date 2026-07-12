@@ -1,5 +1,5 @@
 import { hmacHex, safeEqual, sha256Hex } from "@/src/lib/crypto";
-import { getEnv, hasRetellCredentials } from "@/src/lib/env";
+import { getEnv } from "@/src/lib/env";
 
 export interface RetellCreatePhoneCallInput {
   toNumber: string;
@@ -18,10 +18,25 @@ export interface RetellCreatePhoneCallResponse {
   [key: string]: unknown;
 }
 
+export interface RetellCreateWebCallInput {
+  agentId?: string;
+  metadata?: Record<string, unknown>;
+  dynamicVariables?: Record<string, unknown>;
+}
+
+export interface RetellCreateWebCallResponse {
+  call_id: string;
+  access_token: string;
+  call_status?: string;
+  agent_id?: string;
+  [key: string]: unknown;
+}
+
 export async function createRetellPhoneCall(input: RetellCreatePhoneCallInput): Promise<RetellCreatePhoneCallResponse> {
   const env = getEnv();
+  const agentId = input.agentId ?? env.RETELL_AGENT_ID;
 
-  if (!hasRetellCredentials(env)) {
+  if (!env.RETELL_API_KEY || !agentId) {
     throw new Error("Retell credentials are not configured");
   }
 
@@ -33,7 +48,7 @@ export async function createRetellPhoneCall(input: RetellCreatePhoneCallInput): 
   const body: Record<string, unknown> = {
     from_number: fromNumber,
     to_number: input.toNumber,
-    override_agent_id: input.agentId ?? env.RETELL_AGENT_ID,
+    override_agent_id: agentId,
     metadata: input.metadata ?? {}
   };
 
@@ -57,6 +72,41 @@ export async function createRetellPhoneCall(input: RetellCreatePhoneCallInput): 
   }
 
   return JSON.parse(text) as RetellCreatePhoneCallResponse;
+}
+
+export async function createRetellWebCall(input: RetellCreateWebCallInput): Promise<RetellCreateWebCallResponse> {
+  const env = getEnv();
+  const agentId = input.agentId ?? env.RETELL_AGENT_ID;
+
+  if (!env.RETELL_API_KEY || !agentId) {
+    throw new Error("Retell web-call credentials are not configured");
+  }
+
+  const body: Record<string, unknown> = {
+    agent_id: agentId,
+    metadata: input.metadata ?? {}
+  };
+
+  if (input.dynamicVariables) {
+    body.retell_llm_dynamic_variables = input.dynamicVariables;
+  }
+
+  const response = await fetch("https://api.retellai.com/v2/create-web-call", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.RETELL_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`Retell create-web-call failed with HTTP ${response.status}: ${text.slice(0, 500)}`);
+  }
+
+  return JSON.parse(text) as RetellCreateWebCallResponse;
 }
 
 export function verifyRetellSignature(input: {

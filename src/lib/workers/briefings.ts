@@ -8,8 +8,9 @@ import {
   logExecution,
   recordRetellCall
 } from "@/src/lib/db";
-import { getEnv } from "@/src/lib/env";
+import { getEnv, getExecutiveAssistantAgentId } from "@/src/lib/env";
 import { createRetellPhoneCall } from "@/src/lib/integrations/retell";
+import { executiveAssistantDynamicVariables } from "@/src/lib/retell-personas";
 import { WorkerResult } from "@/src/lib/types";
 
 export async function runMorningBriefing(): Promise<WorkerResult> {
@@ -37,11 +38,13 @@ async function runBriefing(type: "morning" | "evening"): Promise<WorkerResult> {
 
   const call = await createRetellPhoneCall({
     toNumber: env.OWNER_PHONE,
+    agentId: getExecutiveAssistantAgentId(env),
     metadata: {
       briefing_type: type,
       owner_phone: env.OWNER_PHONE
     },
     dynamicVariables: {
+      ...executiveAssistantDynamicVariables,
       briefing_type: type,
       briefing_text: briefingText
     }

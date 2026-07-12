@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { DASHBOARD_SESSION_COOKIE, isValidDashboardSession } from "@/src/lib/dashboard-session";
 import { getEnv } from "@/src/lib/env";
 
 export function jsonResponse(data: unknown, status = 200): NextResponse {
@@ -23,9 +24,16 @@ export function requireDashboardAuth(request: NextRequest): void {
   const env = getEnv();
   const authorization = request.headers.get("authorization");
 
-  if (authorization !== `Bearer ${env.DASHBOARD_API_TOKEN}`) {
-    throw Object.assign(new Error("Unauthorized dashboard request"), { status: 401 });
+  if (authorization === `Bearer ${env.DASHBOARD_API_TOKEN}`) {
+    return;
   }
+
+  const dashboardSession = request.cookies.get(DASHBOARD_SESSION_COOKIE)?.value;
+  if (isValidDashboardSession(dashboardSession, Date.now(), env)) {
+    return;
+  }
+
+  throw Object.assign(new Error("Unauthorized dashboard request"), { status: 401 });
 }
 
 export async function withRouteErrors<T>(handler: () => Promise<T>): Promise<NextResponse> {

@@ -1,13 +1,25 @@
 import { z } from "zod";
 
+const blankToUndefined = (value: unknown): unknown => {
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+
+  return value;
+};
+
+const optionalEnv = <T extends z.ZodTypeAny>(schema: T) => z.preprocess(blankToUndefined, schema.optional());
+const defaultedEnv = <T extends z.ZodTypeAny>(schema: T, defaultValue: z.infer<T>) =>
+  z.preprocess(blankToUndefined, schema.default(defaultValue));
+
 const envSchema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
 
-  OPENAI_API_KEY: z.string().min(20).optional(),
-  OPENAI_MODEL: z.string().default("gpt-5.5"),
-  OPENAI_COST_INPUT_CENTS_PER_1K: z.coerce.number().nonnegative().default(1),
-  OPENAI_COST_OUTPUT_CENTS_PER_1K: z.coerce.number().nonnegative().default(4),
+  OPENAI_API_KEY: optionalEnv(z.string().min(20)),
+  OPENAI_MODEL: defaultedEnv(z.string(), "gpt-5.5"),
+  OPENAI_COST_INPUT_CENTS_PER_1K: defaultedEnv(z.coerce.number().nonnegative(), 1),
+  OPENAI_COST_OUTPUT_CENTS_PER_1K: defaultedEnv(z.coerce.number().nonnegative(), 4),
 
   CRON_SECRET: z.string().min(16),
   DASHBOARD_API_TOKEN: z.string().min(32),
@@ -15,19 +27,21 @@ const envSchema = z.object({
   PUBLIC_BASE_URL: z.string().url(),
 
   OWNER_PHONE: z.string().regex(/^\+\d{8,15}$/),
+  OWNER_EMAIL: optionalEnv(z.string().email()),
 
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().regex(/^\+\d{8,15}$/).optional(),
+  TWILIO_ACCOUNT_SID: optionalEnv(z.string()),
+  TWILIO_AUTH_TOKEN: optionalEnv(z.string()),
+  TWILIO_PHONE_NUMBER: optionalEnv(z.string().regex(/^\+\d{8,15}$/)),
 
-  RETELL_API_KEY: z.string().optional(),
-  RETELL_AGENT_ID: z.string().optional(),
-  RETELL_FROM_NUMBER: z.string().regex(/^\+\d{8,15}$/).optional(),
+  RETELL_API_KEY: optionalEnv(z.string()),
+  RETELL_AGENT_ID: optionalEnv(z.string()),
+  RETELL_EXECUTIVE_ASSISTANT_AGENT_ID: optionalEnv(z.string()),
+  RETELL_FROM_NUMBER: optionalEnv(z.string().regex(/^\+\d{8,15}$/)),
 
-  MAKE_EMAIL_WEBHOOK_URL: z.string().url().optional(),
-  MAKE_WEBHOOK_SECRET: z.string().min(16).optional(),
-  FROM_EMAIL: z.string().email().optional(),
-  REPLY_TO_EMAIL: z.string().email().optional()
+  MAKE_EMAIL_WEBHOOK_URL: optionalEnv(z.string().url()),
+  MAKE_WEBHOOK_SECRET: optionalEnv(z.string().min(16)),
+  FROM_EMAIL: optionalEnv(z.string().email()),
+  REPLY_TO_EMAIL: optionalEnv(z.string().email())
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -58,5 +72,17 @@ export function hasTwilioCredentials(env = getEnv()): boolean {
 }
 
 export function hasRetellCredentials(env = getEnv()): boolean {
-  return Boolean(env.RETELL_API_KEY && env.RETELL_AGENT_ID && (env.RETELL_FROM_NUMBER || env.TWILIO_PHONE_NUMBER));
+  return Boolean(
+    env.RETELL_API_KEY &&
+      (env.RETELL_AGENT_ID || env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID) &&
+      (env.RETELL_FROM_NUMBER || env.TWILIO_PHONE_NUMBER)
+  );
+}
+
+export function hasRetellWebCallCredentials(env = getEnv()): boolean {
+  return Boolean(env.RETELL_API_KEY && (env.RETELL_AGENT_ID || env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID));
+}
+
+export function getExecutiveAssistantAgentId(env = getEnv()): string | undefined {
+  return env.RETELL_EXECUTIVE_ASSISTANT_AGENT_ID ?? env.RETELL_AGENT_ID;
 }

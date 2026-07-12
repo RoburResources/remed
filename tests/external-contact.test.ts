@@ -7,7 +7,8 @@ const recordComplianceEvent = vi.hoisted(() => vi.fn());
 
 vi.mock("@/src/lib/env", () => ({
   getEnv: () => ({
-    OWNER_PHONE: "+61400000000"
+    OWNER_PHONE: "+61400000000",
+    OWNER_EMAIL: "michael@robur.com.au"
   })
 }));
 
@@ -25,6 +26,35 @@ describe("external contact compliance gate", () => {
     await expect(assertExternalContactAllowed(makeTask(), "email")).rejects.toThrow(
       "External contact disabled"
     );
+  });
+
+  it("allows owner phone calls even when outside contact is disabled", async () => {
+    getConfig.mockResolvedValue(false);
+    const { assertExternalContactAllowed } = await import("@/src/lib/compliance");
+
+    await expect(
+      assertExternalContactAllowed(
+        makeTask({
+          action_type: "briefing",
+          action_payload: { to_number: "+61400000000" }
+        }),
+        "call"
+      )
+    ).resolves.toBeUndefined();
+  });
+
+  it("allows owner email even when outside contact is disabled", async () => {
+    getConfig.mockResolvedValue(false);
+    const { assertExternalContactAllowed } = await import("@/src/lib/compliance");
+
+    await expect(
+      assertExternalContactAllowed(
+        makeTask({
+          action_payload: { to_email: "Michael@Robur.com.au" }
+        }),
+        "email"
+      )
+    ).resolves.toBeUndefined();
   });
 
   it("requires task-specific owner approval for non-owner external contact", async () => {
